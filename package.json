@@ -19,6 +19,7 @@
   "homepage": "https://github.com/HeyKos/louise#readme",
   "dependencies": {
     "bluebird": "^3.5.1",
+    "dotenv": "^6.0.0",
     "mongoose": "^4.13.6",
     "slackbots": "^0.3.0"
   }
