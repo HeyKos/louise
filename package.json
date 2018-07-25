@@ -1,0 +1,25 @@
+{
+  "name": "louise",
+  "version": "1.0.0",
+  "description": "A SlackBot to manage code reviews",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HeyKos/louise.git"
+  },
+  "author": "Mike Koser",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/HeyKos/louise/issues"
+  },
+  "homepage": "https://github.com/HeyKos/louise#readme",
+  "dependencies": {
+    "bluebird": "^3.5.1",
+    "mongoose": "^4.13.6",
+    "slackbots": "^0.3.0"
+  }
+}
