@@ -18,6 +18,8 @@
   },
   "homepage": "https://github.com/HeyKos/louise#readme",
   "dependencies": {
+    "@slack/client": "^4.3.1",
+    "@slack/events-api": "^1.0.1",
     "bluebird": "^3.5.1",
     "dotenv": "^6.0.0",
     "mongoose": "^4.13.6",
