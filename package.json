@@ -18,11 +18,15 @@
   },
   "homepage": "https://github.com/HeyKos/louise#readme",
   "dependencies": {
+    "@aoberoi/passport-slack": "^1.0.5",
     "@slack/client": "^4.3.1",
     "@slack/events-api": "^1.0.1",
     "bluebird": "^3.5.1",
+    "body-parser": "^1.16.1",
     "dotenv": "^6.0.0",
+    "express": "^4.14.1",
     "mongoose": "^4.13.6",
+    "passport": "^0.3.2",
     "slackbots": "^0.3.0"
   }
 }
