@@ -4,67 +4,22 @@ var mongoose = require('mongoose');  // import mongoose library for accessing Mo
 // BEGIN EXPRESS CONFIG
 
 const slackEventsApi = require('@slack/events-api');
-const SlackClient = require('@slack/client').WebClient;
-const passport = require('passport');
-const SlackStrategy = require('@aoberoi/passport-slack').default.Strategy;
+const { WebClient } = require('@slack/client'); 
+// An access token (from your Slack app or custom integration - xoxp, xoxb, or xoxa)
+const token = process.env.SLACK_TOKEN;
+const web = new WebClient(token);
 const http = require('http');
 const express = require('express');
 const bodyParser = require('body-parser');
-
+const botUserId = "UBX710JFN";
 // *** Initialize event adapter using verification token from environment variables ***
 const slackEvents = slackEventsApi.createSlackEventAdapter(process.env.SLACK_VERIFICATION_TOKEN, {
     includeBody: true
 });
 
-// Initialize a data structures to store team authorization info (typically stored in a database)
-const botAuthorizations = {}
-
-// Helpers to cache and lookup appropriate client
-// NOTE: Not enterprise-ready. if the event was triggered inside a shared channel, this lookup
-// could fail but there might be a suitable client from one of the other teams that is within that
-// shared channel.
-const clients = {};
-function getClientByTeamId(teamId) {
-  if (!clients[teamId] && botAuthorizations[teamId]) {
-    clients[teamId] = new SlackClient(botAuthorizations[teamId]);
-  }
-  if (clients[teamId]) {
-    return clients[teamId];
-  }
-  return null;
-}
-
-// Initialize Add to Slack (OAuth) helpers
-passport.use(new SlackStrategy({
-    clientID: process.env.SLACK_CLIENT_ID,
-    clientSecret: process.env.SLACK_CLIENT_SECRET,
-    skipUserProfile: true,
-  }, (accessToken, scopes, team, extra, profiles, done) => {
-    botAuthorizations[team.id] = extra.bot.accessToken;
-    done(null, {});
-}));
-
 // Initialize an Express application
 const app = express();
 app.use(bodyParser.json());
-
-// Plug the Add to Slack (OAuth) helpers into the express app
-app.use(passport.initialize());
-app.get('/', (req, res) => {
-  res.send('<a href="/auth/slack"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>');
-});
-app.get('/auth/slack', passport.authenticate('slack', {
-  scope: ['bot']
-}));
-app.get('/auth/slack/callback',
-  passport.authenticate('slack', { session: false }),
-  (req, res) => {
-    res.send('<p>Greet and React was successfully installed on your team.</p>');
-  },
-  (err, req, res, next) => {
-    res.status(500).send(`<p>Greet and React failed to install</p> <pre>${err}</pre>`);
-  }
-);
 
 // *** Plug the event adapter into the express app as middleware ***
 app.use('/slack/events', slackEvents.expressMiddleware());
@@ -74,33 +29,34 @@ app.use('/slack/events', slackEvents.expressMiddleware());
 // *** Greeting any user that says "hi" ***
 slackEvents.on('message', (message, body) => {
     console.log("received a message", message);
-    // Only deal with messages that have no subtype (plain messages) and contain 'hi'
-    if (!message.subtype && message.text.indexOf('hi') >= 0) {
-      // Initialize a client
-      const slack = getClientByTeamId(body.team_id);
-      // Handle initialization failure
-      if (!slack) {
-        return console.error('No authorization found for this team. Did you install this app again after restarting?');
-      }
-      // Respond to the message back in the same channel
-      slack.chat.postMessage(message.channel, `Hello <@${message.user}>! :tada:`)
-        .catch(console.error);
+    if (message == undefined) {
+        return;
+    }
+
+    if (message.channel == undefined) {
+        return;
+    }
+
+    // Ignore bot messages.
+    if (message.subtype === "bot_message") {
+        return;
+    }
+
+    // Only reply to mentions of the bot
+    if (message.text.indexOf(`<@${botUserId}>`) === -1) {
+        return;
+    }
+
+    const conversationId = message.channel;
+
+    // Check if the user is requesting a code review.
+    if (message.text.indexOf("code review") > -1) {
+        processCodeReviewRequest(conversationId);
     }
 });
 
-
-// *** Responding to reactions with the same emoji ***
-slackEvents.on('reaction_added', (event, body) => {
-    // Initialize a client
-    const slack = getClientByTeamId(body.team_id);
-    // Handle initialization failure
-    if (!slack) {
-      return console.error('No authorization found for this team. Did you install this app again after restarting?');
-    }
-    // Respond to the reaction back with the same emoji
-    slack.chat.postMessage(event.item.channel, `:${event.reaction}:`)
-      .catch(console.error);
-});
+// Handle errors (see `errorCodes` export)
+slackEvents.on('error', console.error);
 
 // Start the express application
 const port = process.env.PORT || 3000;
@@ -109,6 +65,22 @@ http.createServer(app).listen(port, () => {
 });
 
 // END EXPRESS CONFIG
+
+// BEGIN Bot Handlers
+
+// TODO: Abstract this to a logic layer for the bot.
+function processCodeReviewRequest(channelId) {
+    // TODO: Parse the message, and determine which action to take.
+    const message = "Okay your code reviewer is Mike Koser. Good luck"; 
+    web.chat.postMessage({ channel: channelId, text: message })
+    .then((res) => {
+        // `res` contains information about the posted message
+        console.log('Message sent: ', res.ts);
+    })
+    .catch(console.error);
+}
+
+// END Bot Handlers
   
 
 /* Create MongoDB Connection */
