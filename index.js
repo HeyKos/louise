@@ -102,26 +102,7 @@ mongoose.connect(process.env.CONNECTION_STRING, { useMongoClient: true, promiseL
 // Delete all developers
 DeveloperModel.remove({});
 // Define the array of developers
-var developers = [
-    { user_id: "1",    name: "Andrew Cameron",  active: true, last_review_date: null },
-    { user_id: "16",   name: "Brandon Scott",   active: true, last_review_date: null },
-    { user_id: "2",    name: "Dylan Justice",   active: true, last_review_date: null },
-    { user_id: "3",    name: "Jim Stevenson",   active: true, last_review_date: null },
-    { user_id: "4",    name: "Jon Hollinger",   active: true, last_review_date: null },
-    { user_id: "17",   name: "Josh Hughes",     active: true, last_review_date: null },
-    { user_id: "18",   name: "Josh Peters",     active: true, last_review_date: null },
-    { user_id: "5",    name: "Josh Randall",    active: true, last_review_date: null },
-    { user_id: "6",    name: "Kevin Busch",     active: true, last_review_date: null },
-    { user_id: "7",    name: "LaVonne Eby",     active: true, last_review_date: null },
-    { user_id: "8",    name: "Matt Musselman",  active: true, last_review_date: null },
-    { user_id: "9",    name: "Mike Koser",      active: true, last_review_date: null },
-    { user_id: "10",   name: "Phil Hess",       active: true, last_review_date: null },
-    { user_id: "11",   name: "Scott Savage",    active: true, last_review_date: null },
-    { user_id: "13",   name: "Stefanie Leitch", active: true, last_review_date: null },
-    { user_id: "19",   name: "Von Bock",        active: true, last_review_date: null },
-    { user_id: "14",   name: "Winton DeShong",  active: true, last_review_date: null },
-    { user_id: "15",   name: "Zach McCleaf",    active: true, last_review_date: null },
-];
+var developers = require("./data/developerSeeds.js");
 // insert all developers
 DeveloperModel.insertMany(developers, (err) => {
     if (err) { console.log("Error seeding users", err) }
