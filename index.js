@@ -72,7 +72,26 @@ http.createServer(app).listen(port, () => {
 // TODO: Abstract this to a logic layer for the bot.
 function processCodeReviewRequest(channelId) {
     // TODO: Parse the message, and determine which action to take.
-    const promise = findUser().then((developer) => {
+    const promise = findUser().then((developers) => {
+        if (developers == undefined || developers.length === 0) {
+            web.chat.postMessage({ channel: channelId, text: "Sorry, but there are no developers available for a code review." })
+            .then((res) => {
+                // `res` contains information about the posted message
+                console.log('Message sent: ', res.ts);
+            })
+            .catch(console.error);            
+            return;
+        }
+        console.log("found developers", developers);
+        const developer = developers[0];
+        developer.last_review_date = new Date();
+        DeveloperModel.update({ user_id: developer.user_id }, developer, {}, (err, raw) => {
+            if (err) {
+                console.log("Error updating the developer record", err);
+                return;
+            }
+            console.log('The raw update response was ', raw);
+        });
         const message = `Okay your code reviewer is ${ developer.name }. Good luck`; 
         web.chat.postMessage({ channel: channelId, text: message })
         .then((res) => {
@@ -86,7 +105,12 @@ function processCodeReviewRequest(channelId) {
 }
 
 function findUser() {
-    return DeveloperModel.findOne({ name: "Zach McCleaf" }).exec();
+    // Find the user who is active and has not reviewed for the longest time.
+    return DeveloperModel.find({ active: true })
+            .sort({ "last_review_date": "asc" })
+            .sort({ "name": "asc" })
+            .limit(1)
+            .exec();
 }
 
 // END Bot Handlers
@@ -98,15 +122,19 @@ mongoose.connect(process.env.CONNECTION_STRING, { useMongoClient: true, promiseL
   .catch((err) => console.error(err));
 
 // BEGIN SEEDS
-// TODO: If seeds are needed going forward abstract them.
-// Delete all developers
-DeveloperModel.remove({});
-// Define the array of developers
-var developers = require("./data/developerSeeds.js");
-// insert all developers
-DeveloperModel.insertMany(developers, (err) => {
-    if (err) { console.log("Error seeding users", err) }
-});
 
+// Delete all developers
+DeveloperModel.remove({}, (err) => {
+    if (err) {
+        console.log("Error clearing developers from database", err);
+        return;
+    }
+    console.log("Removed all developers from the database.");
+    var developers = require("./data/developerSeeds.js");
+    // insert all developers
+    DeveloperModel.insertMany(developers, (err) => {
+        if (err) { console.log("Error seeding users", err) }
+    });
+})
 
 // END SEEDS
