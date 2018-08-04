@@ -3,36 +3,22 @@ var mongoose = require("mongoose");  // import mongoose library for accessing Mo
 
 // BEGIN EXPRESS CONFIG
 
-const slackEventsApi = require("@slack/events-api");
 const http           = require("http");
 const express        = require("express");
 const bodyParser     = require("body-parser");
 const DeveloperModel = require("./models/Developer");
-// *** Initialize event adapter using verification token from environment variables ***
-const slackEvents    = slackEventsApi.createSlackEventAdapter(process.env.SLACK_VERIFICATION_TOKEN, {
-    includeBody: true
-});
 // Initialize an Express application
 const app            = express();
-const slackMessageParser = require("./slack-message-parser");
+const slackMiddleware = require("./slack-middleware"); 
 
 app.use(bodyParser.json());
-
 // *** Plug the event adapter into the express app as middleware ***
-app.use("/slack/events", slackEvents.expressMiddleware());
-
-// *** Attach listeners to the event adapter ***
-
-// *** Greeting any user that says "hi" ***
-slackEvents.on("message", slackMessageParser);
-
-// Handle errors (see `errorCodes` export)
-slackEvents.on("error", console.error);
+app.use("/slack/events", slackMiddleware);
 
 // Start the express application
 const port = process.env.PORT || 3000;
 http.createServer(app).listen(port, () => {
-  console.log(`server listening on port ${port}`);
+    console.log(`server listening on port ${ port }`);
 });
 
 // END EXPRESS CONFIG
