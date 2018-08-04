@@ -6,13 +6,13 @@ var mongoose = require('mongoose');  // import mongoose library for accessing Mo
 const slackEventsApi = require('@slack/events-api');
 const { WebClient } = require('@slack/client'); 
 // An access token (from your Slack app or custom integration - xoxp, xoxb, or xoxa)
-const token = process.env.SLACK_TOKEN;
-const web = new WebClient(token);
-const http = require('http');
-const express = require('express');
-const bodyParser = require('body-parser');
+const token          = process.env.SLACK_TOKEN;
+const web            = new WebClient(token);
+const http           = require('http');
+const express        = require('express');
+const bodyParser     = require('body-parser');
 const DeveloperModel = require("./models/Developer");
-const botUserId = "UBX710JFN";
+const botUserId      = process.env.BOT_USER_ID;
 // *** Initialize event adapter using verification token from environment variables ***
 const slackEvents = slackEventsApi.createSlackEventAdapter(process.env.SLACK_VERIFICATION_TOKEN, {
     includeBody: true
