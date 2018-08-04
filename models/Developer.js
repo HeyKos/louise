@@ -1,10 +1,11 @@
 var mongoose = require('mongoose');
 
 var DeveloperSchema = new mongoose.Schema({
-  user_id:          String,
-  name:             String,
-  active:           Boolean,
-  last_review_date: { type: Date, default: Date.now },
+  userId:         String,
+  name:           String,
+  active:         Boolean,
+  lastReviewDate: { type: Date, default: Date.now },
+  slackUserId:    String,
 });
 
 module.exports = mongoose.model('Developer', DeveloperSchema);

@@ -1,34 +1,34 @@
-var dotenv   = require('dotenv').config();
-var mongoose = require('mongoose');  // import mongoose library for accessing MongoDB
+var dotenv   = require("dotenv").config();
+var mongoose = require("mongoose");  // import mongoose library for accessing MongoDB
 
 // BEGIN EXPRESS CONFIG
 
-const slackEventsApi = require('@slack/events-api');
-const { WebClient } = require('@slack/client'); 
+const slackEventsApi = require("@slack/events-api");
+const { WebClient }  = require("@slack/client"); 
 // An access token (from your Slack app or custom integration - xoxp, xoxb, or xoxa)
 const token          = process.env.SLACK_TOKEN;
 const web            = new WebClient(token);
-const http           = require('http');
-const express        = require('express');
-const bodyParser     = require('body-parser');
+const http           = require("http");
+const express        = require("express");
+const bodyParser     = require("body-parser");
 const DeveloperModel = require("./models/Developer");
 const botUserId      = process.env.BOT_USER_ID;
 // *** Initialize event adapter using verification token from environment variables ***
-const slackEvents = slackEventsApi.createSlackEventAdapter(process.env.SLACK_VERIFICATION_TOKEN, {
+const slackEvents    = slackEventsApi.createSlackEventAdapter(process.env.SLACK_VERIFICATION_TOKEN, {
     includeBody: true
 });
-
 // Initialize an Express application
-const app = express();
+const app            = express();
+
 app.use(bodyParser.json());
 
 // *** Plug the event adapter into the express app as middleware ***
-app.use('/slack/events', slackEvents.expressMiddleware());
+app.use("/slack/events", slackEvents.expressMiddleware());
 
 // *** Attach listeners to the event adapter ***
 
 // *** Greeting any user that says "hi" ***
-slackEvents.on('message', (message, body) => {
+slackEvents.on("message", (message, body) => {
     console.log("received a message", message);
     if (message == undefined) {
         return;
@@ -52,12 +52,12 @@ slackEvents.on('message', (message, body) => {
 
     // Check if the user is requesting a code review.
     if (message.text.indexOf("code review") > -1) {
-        processCodeReviewRequest(conversationId);
+        processCodeReviewRequest(conversationId, message.user);
     }
 });
 
 // Handle errors (see `errorCodes` export)
-slackEvents.on('error', console.error);
+slackEvents.on("error", console.error);
 
 // Start the express application
 const port = process.env.PORT || 3000;
@@ -70,33 +70,33 @@ http.createServer(app).listen(port, () => {
 // BEGIN Bot Handlers
 
 // TODO: Abstract this to a logic layer for the bot.
-function processCodeReviewRequest(channelId) {
+function processCodeReviewRequest(channelId, slackUserId) {
     // TODO: Parse the message, and determine which action to take.
-    const promise = findUser().then((developers) => {
+    const promise = findUser(slackUserId).then((developers) => {
         if (developers == undefined || developers.length === 0) {
             web.chat.postMessage({ channel: channelId, text: "Sorry, but there are no developers available for a code review." })
             .then((res) => {
                 // `res` contains information about the posted message
-                console.log('Message sent: ', res.ts);
+                console.log("Message sent: ", res.ts);
             })
             .catch(console.error);            
             return;
         }
         console.log("found developers", developers);
         const developer = developers[0];
-        developer.last_review_date = new Date();
-        DeveloperModel.update({ user_id: developer.user_id }, developer, {}, (err, raw) => {
+        developer.lastReviewDate = new Date();
+        DeveloperModel.update({ userId: developer.userId }, developer, {}, (err, raw) => {
             if (err) {
                 console.log("Error updating the developer record", err);
                 return;
             }
-            console.log('The raw update response was ', raw);
+            console.log("The raw update response was ", raw);
         });
         const message = `Okay your code reviewer is ${ developer.name }. Good luck`; 
         web.chat.postMessage({ channel: channelId, text: message })
         .then((res) => {
             // `res` contains information about the posted message
-            console.log('Message sent: ', res.ts);
+            console.log("Message sent: ", res.ts);
         })
         .catch(console.error);
     }).catch((err) => {
@@ -104,10 +104,11 @@ function processCodeReviewRequest(channelId) {
     });
 }
 
-function findUser() {
+function findUser(slackUserId) {
     // Find the user who is active and has not reviewed for the longest time.
     return DeveloperModel.find({ active: true })
-            .sort({ "last_review_date": "asc" })
+            .where("slackUserId").ne(slackUserId)
+            .sort({ "lastReviewDate": "asc" })
             .sort({ "name": "asc" })
             .limit(1)
             .exec();
@@ -116,9 +117,9 @@ function findUser() {
 // END Bot Handlers
 
 /* Create MongoDB Connection */
-mongoose.Promise = require('bluebird');
-mongoose.connect(process.env.CONNECTION_STRING, { useMongoClient: true, promiseLibrary: require('bluebird') })
-  .then(() =>  console.log('connection successful'))
+mongoose.Promise = require("bluebird");
+mongoose.connect(process.env.CONNECTION_STRING, { useMongoClient: true, promiseLibrary: require("bluebird") })
+  .then(() =>  console.log("connection successful"))
   .catch((err) => console.error(err));
 
 // BEGIN SEEDS
